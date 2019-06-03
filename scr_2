@@ -1,0 +1,53 @@
+DECLARE
+
+  --Курсор по абонентам
+  CURSOR cur IS
+    SELECT * FROM cf_test_table t
+    WHERE  t.pr = 0
+    ORDER BY 1;
+
+  a       NUMBER := 0;
+  stm     VARCHAR2(4000);
+  v_clnt  NUMBER := 0;
+  
+BEGIN
+
+  <<c_clnt>>
+  FOR rec IN cur LOOP
+
+    BEGIN
+
+      DECLARE
+
+        --Использую в запросе связанный параметр,
+		--что позволяет НЕ разбирать запрос на каждой итерации
+        CURSOR cur_subs (p_clnt NUMBER) IS
+        SELECT * FROM cf_query_table
+        WHERE    main_clnt_id = p_clnt;
+
+        b cur_subs%ROWTYPE;             
+        
+      BEGIN
+        
+        v_clnt := rec.main_clnt_id;
+        
+        <<c_subs>>
+        FOR rec_subs IN cur_subs (v_clnt) LOOP 
+          b := rec_subs;  
+
+          stm := 'main_clnt_id in ('||rec.main_clnt_id||')
+                  and rowid = '''||b.nrow||'''';
+         
+          --Здесь можно выполнить какие - нить действия
+        END LOOP c_subs;
+      END;
+
+    END;
+
+    UPDATE cf_test_table t SET t.pr = 1
+    WHERE  t.main_clnt_id = rec.main_clnt_id;
+    COMMIT;
+
+  END LOOP c_clnt;
+
+END;

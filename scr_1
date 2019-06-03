@@ -1,0 +1,38 @@
+--использлваие динамического sql для прохоу но нескольком партиционированным таблиццам
+DECLARE
+
+    v_table  VARCHAR2(40);  -- Таблица по которой происходит поиск объема
+    v_part   VARCHAR2(40);  -- Партиция
+
+    i NUMBER :=0;
+    a        Varchar2(1000);
+
+BEGIN
+
+      --Таблица
+      v_table := 'calls_00_'||TO_CHAR(SYSDATE ,'MMYYYY');
+
+       <<c_part>>
+       FOR i IN 2..4 LOOP
+        --Партиция
+        IF i < 10 THEN
+          v_part := ' PARTITION (TTTT_'||TO_CHAR(SYSDATE ,'YYYYMM')||'0'||to_char (i)||')';
+        ELSE
+          v_part := ' PARTITION (PPPP_'||TO_CHAR(SYSDATE ,'YYYYMM')||to_char (i)||')';
+        END IF;
+
+--       dbms_output.put_line(v_table ||' '||v_part);
+
+        a := 'INSERT INTO cf_skazakov.cf_mct_localrollback_lcal_g l (nrow, call_id, rec_type, subs_subs_id, rec_number, main_clnt_id, duration, minuts, lcal_lcal_id, dctv_dctv_id, in_balance_$)
+               select /*+ parallel (c 8)*/                            rowid, c.call_id, c.rec_type, c.subs_subs_id, c.rec_number, c.main_clnt_id, c.duration, c.minuts, c.lcal_lcal_id, c.dctv_dctv_id, in_balance_$ 
+               FROM '|| v_table ||' '|| v_part ||' c  
+               WHERE   c.rec_type IN (''08'', ''70'')  
+               AND     c.lcal_lcal_id  IN (25,50,60,61)
+               and     c.rtpl_rtpl_id = 10302
+             ';
+
+        EXECUTE IMMEDIATE a;
+
+       END LOOP c_part;
+
+END;
